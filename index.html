@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Bill Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-4 bg-base-200">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold mb-4">Electricity Bill Calculator</h1>
+	
+	<p> Simple website to split electricity costs between two floor in Punjab, if electricity of both floors are billed together </p>        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control">
+                <label class="label" for="bottomFloorUnits">
+                    <span class="label-text">Bottom Floor Units</span>
+                </label>
+                <input type="number" id="bottomFloorUnits" class="input input-bordered" value="125">
+            </div>
+            <div class="form-control">
+                <label class="label" for="topFloorUnits">
+                    <span class="label-text">Top Floor Units</span>
+                </label>
+                <input type="number" id="topFloorUnits" class="input input-bordered" value="350">
+            </div>
+            <div class="form-control">
+                <label class="label" for="totalBill">
+                    <span class="label-text">Total Bill (Rs)</span>
+                </label>
+                <input type="number" id="totalBill" class="input input-bordered" value="5055">
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h2 class="text-xl font-semibold mb-2">Slab Utilization</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="form-control">
+                    <label class="label" for="slab1">
+                        <span class="label-text">Slab 1 Units</span>
+                    </label>
+                    <input type="number" id="slab1" class="input input-bordered" value="217">
+                </div>
+                <div class="form-control">
+                    <label class="label" for="slab2">
+                        <span class="label-text">Slab 2 Units</span>
+                    </label>
+                    <input type="number" id="slab2" class="input input-bordered" value="433">
+                </div>
+                <div class="form-control">
+                    <label class="label" for="slab3">
+                        <span class="label-text">Slab 3 Units</span>
+                    </label>
+                    <input type="number" id="slab3" class="input input-bordered" value="226">
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h2 class="text-xl font-semibold mb-2">Slab Rates</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="form-control">
+                    <label class="label" for="rate1">
+                        <span class="label-text">Slab 1 Rate</span>
+                    </label>
+                    <input type="number" id="rate1" class="input input-bordered" value="4.54" step="0.01">
+                </div>
+                <div class="form-control">
+                    <label class="label" for="rate2">
+                        <span class="label-text">Slab 2 Rate</span>
+                    </label>
+                    <input type="number" id="rate2" class="input input-bordered" value="6.76" step="0.01">
+                </div>
+                <div class="form-control">
+                    <label class="label" for="rate3">
+                        <span class="label-text">Slab 3 Rate</span>
+                    </label>
+                    <input type="number" id="rate3" class="input input-bordered" value="7.75" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary mt-4" onclick="calculateBill()">Calculate Bill</button>
+
+        <div id="results" class="mt-4"></div>
+    </div>
+
+    <script>
+        function calculateBill() {
+            const bottomFloorUnits = parseFloat(document.getElementById('bottomFloorUnits').value);
+            const topFloorUnits = parseFloat(document.getElementById('topFloorUnits').value);
+            const totalBill = parseFloat(document.getElementById('totalBill').value);
+            const slabUtilization = [
+                parseFloat(document.getElementById('slab1').value),
+                parseFloat(document.getElementById('slab2').value),
+                parseFloat(document.getElementById('slab3').value)
+            ];
+            const slabRates = [
+                parseFloat(document.getElementById('rate1').value),
+                parseFloat(document.getElementById('rate2').value),
+                parseFloat(document.getElementById('rate3').value)
+            ];
+
+            const totalUnits = bottomFloorUnits + topFloorUnits;
+
+            // Proportion-based calculation
+            const proportionResult = {
+                "Bottom Floor": (bottomFloorUnits / totalUnits) * totalBill,
+                "Top Floor": (topFloorUnits / totalUnits) * totalBill
+            };
+
+            // Slab-based calculation
+            const slabResult = calculateSlabBased(bottomFloorUnits, topFloorUnits, slabUtilization, slabRates, totalBill);
+
+            // Total metrics
+            const totalMetrics = calculateTotalMetrics(bottomFloorUnits, topFloorUnits, slabUtilization, slabRates, totalBill, slabResult);
+
+            displayResults(proportionResult, slabResult, totalMetrics);
+        }
+
+        function calculateSlabBased(bottomFloorUnits, topFloorUnits, slabUtilization, slabRates, totalBill) {
+            const bottomFloorSlab = [0, 0, 0];
+            const topFloorSlab = [0, 0, 0];
+
+            // Allocate units for slab 1
+            const slab1Quota = slabUtilization[0] / 2;
+            bottomFloorSlab[0] = Math.min(bottomFloorUnits, slab1Quota);
+            topFloorSlab[0] = Math.min(topFloorUnits, slab1Quota);
+
+            let bottomFloorRemaining = Math.max(0, bottomFloorUnits - bottomFloorSlab[0]);
+            let topFloorRemaining = Math.max(0, topFloorUnits - topFloorSlab[0]);
+
+            // Allocate units for slab 2
+            const slab2Quota = slabUtilization[1] / 2;
+            bottomFloorSlab[1] = Math.min(bottomFloorRemaining, slab2Quota);
+            topFloorSlab[1] = Math.min(topFloorRemaining, slab2Quota);
+
+            bottomFloorRemaining = Math.max(0, bottomFloorRemaining - bottomFloorSlab[1]);
+            topFloorRemaining = Math.max(0, topFloorRemaining - topFloorSlab[1]);
+
+            // Allocate remaining units to the available quota in slab 1 and 2
+            let unusedSlab1 = slabUtilization[0] - (bottomFloorSlab[0] + topFloorSlab[0]);
+            let unusedSlab2 = slabUtilization[1] - (bottomFloorSlab[1] + topFloorSlab[1]);
+
+            // Allocate bottom floor remaining units
+            if (bottomFloorRemaining > 0) {
+                const additionalSlab1 = Math.min(bottomFloorRemaining, unusedSlab1);
+                bottomFloorSlab[0] += additionalSlab1;
+                bottomFloorRemaining -= additionalSlab1;
+                unusedSlab1 -= additionalSlab1;
+
+                const additionalSlab2 = Math.min(bottomFloorRemaining, unusedSlab2);
+                bottomFloorSlab[1] += additionalSlab2;
+                bottomFloorRemaining -= additionalSlab2;
+                unusedSlab2 -= additionalSlab2;
+            }
+
+            // Allocate top floor remaining units
+            if (topFloorRemaining > 0) {
+                const additionalSlab1 = Math.min(topFloorRemaining, unusedSlab1);
+                topFloorSlab[0] += additionalSlab1;
+                topFloorRemaining -= additionalSlab1;
+
+                const additionalSlab2 = Math.min(topFloorRemaining, unusedSlab2);
+                topFloorSlab[1] += additionalSlab2;
+                topFloorRemaining -= additionalSlab2;
+            }
+
+            // Allocate any remaining units to slab 3 (top floor only)
+            topFloorSlab[2] = topFloorRemaining;
+
+            // Calculate costs
+            const bottomFloorCost = bottomFloorSlab.reduce((sum, usage, i) => sum + usage * slabRates[i], 0);
+            const topFloorCost = topFloorSlab.reduce((sum, usage, i) => sum + usage * slabRates[i], 0);
+
+            // Calculate and apply subsidy
+            const totalCost = bottomFloorCost + topFloorCost;
+            const subsidy = totalCost - totalBill;
+            const subsidyPerFloor = subsidy / 2;
+
+            const bottomFloorBill = bottomFloorCost - subsidyPerFloor;
+            const topFloorBill = topFloorCost - subsidyPerFloor;
+
+            return {
+                "Bottom Floor": bottomFloorBill.toFixed(2),
+                "Top Floor": topFloorBill.toFixed(2),
+                "Bottom Floor Slab Usage": bottomFloorSlab,
+                "Top Floor Slab Usage": topFloorSlab,
+                "Total Cost": totalCost,
+                "Subsidy": subsidy
+            };
+        }
+
+        function calculateTotalMetrics(bottomFloorUnits, topFloorUnits, slabUtilization, slabRates, totalBill, slabResult) {
+            const totalUnits = bottomFloorUnits + topFloorUnits;
+            const totalSlabUsage = slabResult["Bottom Floor Slab Usage"].map((usage, i) => usage + slabResult["Top Floor Slab Usage"][i]);
+            const totalCostBeforeSubsidy = slabResult["Total Cost"];
+            const subsidy = slabResult["Subsidy"];
+            const netPayable = totalBill;
+
+            return {
+                "Total Usage": totalUnits,
+                "Slab-wise Total Usage": totalSlabUsage,
+                "Total Cost Before Subsidy": totalCostBeforeSubsidy.toFixed(2),
+                "Discount (Subsidy)": subsidy.toFixed(2),
+                "Net Payable": netPayable.toFixed(2)
+            };
+        }
+
+        function displayResults(proportionResult, slabResult, totalMetrics) {
+            let resultsHtml = `
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">Results</h2>
+                        <div class="divider">Proportion-based Calculation</div>
+                        <p>Bottom Floor: ${proportionResult["Bottom Floor"].toFixed(2)} Rs</p>
+                        <p>Top Floor: ${proportionResult["Top Floor"].toFixed(2)} Rs</p>
+                        
+                        <div class="divider">Slab-based Calculation</div>
+                        <p>Bottom Floor: ${slabResult["Bottom Floor"]} Rs</p>
+                        <p>Top Floor: ${slabResult["Top Floor"]} Rs</p>
+                        <p>Bottom Floor Slab Usage: ${slabResult["Bottom Floor Slab Usage"].join(", ")}</p>
+                        <p>Top Floor Slab Usage: ${slabResult["Top Floor Slab Usage"].join(", ")}</p>
+                        
+                        <div class="divider">Total Metrics</div>
+                        <p>Total Usage: ${totalMetrics["Total Usage"]} units</p>
+                        <p>Slab-wise Total Usage: ${totalMetrics["Slab-wise Total Usage"].join(", ")}</p>
+                        <p>Total Cost Before Subsidy: ${totalMetrics["Total Cost Before Subsidy"]} Rs</p>
+                        <p>Discount (Subsidy): ${totalMetrics["Discount (Subsidy)"]} Rs</p>
+                        <p>Net Payable: ${totalMetrics["Net Payable"]} Rs</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('results').innerHTML = resultsHtml;
+        }
+    </script>
+</body>
+</html>
